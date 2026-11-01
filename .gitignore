@@ -1,0 +1,13 @@
+# Mac build output (created by install.command)
+.venv/
+Marka.app/
+marka.log
+
+# Windows build output (created by build-windows.command / windows/build.ps1)
+dist/
+windows/build/
+windows/dist/
+
+# OS junk
+.DS_Store
+Thumbs.db

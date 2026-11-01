@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Марка</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<style>
+/* Always-light black-and-white theme, only the logo is colored.
+   Wide screens: files on the left, settings on the right. Narrow screens: one column.
+   The download button closes the settings panel. */
+:root {
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --ink: #111111;
+  --muted: #6B6B6B;
+  --line: #DEDEDE;
+  --soft: #F2F2F2;
+  --on-ink: #FFFFFF;
+  --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.4 var(--font-ui);
+  padding-inline: max(12px, env(safe-area-inset-left, 0px));
+  padding-block: 12px 24px;
+}
+.wrap { max-width: 960px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+
+header { display: flex; align-items: center; gap: 10px; min-width: 0; }
+header img { width: 32px; height: 32px; flex: none; }
+h1 { font: 700 19px/1 var(--font-display); margin: 0; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: 12px; align-items: start; }
+@media (max-width: 700px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+h2 { font: 600 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 0; }
+
+.drop {
+  display: flex; align-items: center; gap: 12px;
+  border: 1.5px dashed var(--ink); border-radius: 10px; background: var(--soft);
+  padding: 12px 14px; cursor: pointer; transition: background .15s;
+}
+.drop:hover, .drop:focus-visible { outline: none; background: #E8E8E8; }
+.drop.over { background: #DCDCDC; }
+.drop svg { width: 26px; height: 26px; flex: none; }
+.drop strong { display: block; font-weight: 600; }
+.drop span { color: var(--muted); font-size: 13px; }
+
+.files-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); min-height: 38px; }
+.file { border-bottom: 1px solid var(--line); }
+.file:last-child { border-bottom: 0; }
+.file-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 6px 8px 12px; }
+.file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.file-meta { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-meta b { color: var(--ink); font-weight: 600; }
+.file-meta .err { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.status { width: 18px; height: 18px; display: grid; place-items: center; }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: spin .8s linear infinite; }
+.spinner.paused { animation-play-state: paused; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.dot.err { background: none; border: 2px solid var(--ink); width: 10px; height: 10px; }
+.dot.warn { background: none; border: 1.5px dashed var(--muted); width: 10px; height: 10px; }
+.icon-btn { border: 0; background: none; color: var(--muted); cursor: pointer; font: 500 13px/1 var(--font-ui); padding: 6px 8px; border-radius: 6px; }
+.icon-btn.x { font-size: 18px; }
+.icon-btn:hover, .icon-btn:focus-visible { background: var(--soft); color: var(--ink); outline: none; }
+details summary { cursor: pointer; padding: 0 12px 8px 40px; color: var(--muted); font-size: 12px; list-style: none; }
+details summary::-webkit-details-marker { display: none; }
+details summary::before { content: "▸ "; }
+details[open] summary::before { content: "▾ "; }
+.codes { margin: 0 12px 10px 40px; max-height: 200px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+.codes table { border-collapse: collapse; width: 100%; font: 12px/1.4 var(--font-mono); }
+.codes td { padding: 3px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.codes td:first-child { color: var(--muted); width: 1%; text-align: right; font-variant-numeric: tabular-nums; }
+.codes tr.dup td { opacity: .4; }
+.gs { font-weight: 700; }
+
+.settings { padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.settings-head { display: flex; justify-content: space-between; align-items: center; min-height: 22px; }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field > .label { font-size: 12px; font-weight: 600; }
+/* segmented control: radio buttons drawn as one strip of buttons */
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 8px; padding: 2px; gap: 2px; background: var(--soft); }
+.seg label { flex: 1 1 auto; position: relative; text-align: center; padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--ink); color: var(--on-ink); }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 1px; }
+select { font: 13px/1.2 var(--font-ui); padding: 5px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); width: 100%; min-width: 0; }
+.checks { display: grid; gap: 6px; }
+.check { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; font-size: 13px; }
+.check input { accent-color: var(--ink); width: 15px; height: 15px; margin: 1px 0 0; flex: none; }
+.check small { display: block; color: var(--muted); font-size: 12px; }
+.text-btn { font: 500 12px/1 var(--font-ui); color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 99px; padding: 4px 9px; cursor: pointer; }
+.text-btn:hover, .text-btn:focus-visible { color: var(--ink); border-color: var(--ink); outline: none; }
+
+.action { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+.summary { text-align: center; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.summary b { color: var(--ink); font-weight: 600; }
+.go { width: 100%; font: 600 14px/1 var(--font-ui); padding: 11px 18px; border: 0; border-radius: 8px; cursor: pointer; background: var(--ink); color: var(--on-ink); }
+.go:hover { opacity: .85; }
+.go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.go:disabled { opacity: .35; cursor: not-allowed; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--on-ink); padding: 9px 14px; border-radius: 8px; font-size: 13px; max-width: calc(100% - 24px); z-index: 10; }
+@media (max-width: 420px) {
+  .drop span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="/icon.svg" alt="">
+    <h1>Марка</h1>
+  </header>
+
+  <div class="grid">
+    <main class="col">
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Выбрать PDF-файлы">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5"/><path d="M4 14v4a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-4"/></svg>
+        <div><strong>Перетащите PDF с кодами</strong><span>или нажмите, чтобы выбрать. Можно несколько.</span></div>
+        <input type="file" id="picker" accept="application/pdf,.pdf" multiple hidden>
+      </div>
+
+      <section class="panel" id="files" aria-live="polite" hidden>
+        <div class="files-head">
+          <h2>Файлы</h2>
+          <button class="icon-btn" id="clear">Очистить</button>
+        </div>
+        <div id="list"></div>
+      </section>
+    </main>
+
+    <aside class="panel settings" id="settings">
+      <div class="settings-head">
+        <h2>Выгрузка</h2>
+        <button class="text-btn" id="reset" type="button" hidden>По умолчанию</button>
+      </div>
+
+      <div class="field">
+        <span class="label" id="mode-label">Файлы CSV</span>
+        <div class="seg" role="radiogroup" aria-labelledby="mode-label">
+          <label title="Все коды из всех PDF в одном файле"><input type="radio" name="mode" value="single" checked>Один</label>
+          <label title="Отдельный CSV для каждого PDF, в ZIP-архиве"><input type="radio" name="mode" value="per-file">На PDF</label>
+          <label title="Отдельный CSV для каждого кода, в ZIP-архиве"><input type="radio" name="mode" value="per-code">На код</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label" id="content-label">Содержимое</span>
+        <div class="seg" role="radiogroup" aria-labelledby="content-label">
+          <label title="Один код в строке, без заголовка"><input type="radio" name="content" value="codes" checked>Только коды</label>
+          <label title="Файл, страница, код, GTIN, серийный номер"><input type="radio" name="content" value="table">Таблица</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="gs">Формат кода</label>
+        <select id="gs">
+          <option value="keep">Полный, с разделителем GS</option>
+          <option value="remove">Полный, без GS</option>
+          <option value="short">Без криптохвоста</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="label" for="delimiter">Разделитель столбцов</label>
+        <select id="delimiter">
+          <option value="semicolon">; точка с запятой</option>
+          <option value="comma">, запятая</option>
+          <option value="tab">табуляция</option>
+        </select>
+      </div>
+
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="raw"><span>Без кавычек, как у «Честного знака»<small>Excel разобьёт код с запятой на две ячейки</small></span></label>
+        <label class="check"><input type="checkbox" id="dedupe" checked><span>Убирать повторы</span></label>
+      </div>
+
+      <div class="action">
+        <button class="go" id="go" disabled>Скачать CSV</button>
+        <div class="summary"><b id="total">Нет кодов</b> · <span id="hint">добавьте PDF</span></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+// the server sends error codes; the text for the user lives here
+const ERRORS = {
+  not_pdf: 'Не удалось открыть PDF: файл повреждён или это не PDF',
+  password: 'PDF защищён паролем',
+  too_large: 'Файл слишком большой',
+  internal: 'Внутренняя ошибка. Подробности в файле marka.log',
+};
+const NO_CONNECTION = 'Нет связи с программой. Запустите «Марку» снова';
+const errorText = (code) => ERRORS[code] || ERRORS.internal;
+const files = [];   // {id, name, size, state: 'wait'|'busy'|'done'|'error', pages, codes, error}
+let queue = Promise.resolve();
+let nextId = 1;
+
+// ----- settings are remembered between launches -----
+const SETTINGS_KEY = 'marka-settings-v2';
+function readSettings() {
+  return {
+    mode: document.querySelector('input[name=mode]:checked').value,
+    content: document.querySelector('input[name=content]:checked').value,
+    gs: $('#gs').value,
+    delimiter: $('#delimiter').value,
+    quotes: $('#raw').checked ? 'none' : 'csv',
+    dedupe: $('#dedupe').checked,
+  };
+}
+const DEFAULTS = readSettings();  // whatever the markup sets
+function applySettings(s) {
+  const m = document.querySelector(`input[name=mode][value="${s.mode}"]`); if (m) m.checked = true;
+  const c = document.querySelector(`input[name=content][value="${s.content}"]`); if (c) c.checked = true;
+  if (s.gs) $('#gs').value = s.gs;
+  if (s.delimiter) $('#delimiter').value = s.delimiter;
+  $('#raw').checked = s.quotes === 'none';
+  $('#dedupe').checked = s.dedupe !== false;
+}
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(readSettings())); } catch (e) {}
+  render();
+}
+try {
+  const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+  if (s) applySettings(s);
+} catch (e) {}
+$('#settings').addEventListener('change', saveSettings);
+$('#reset').addEventListener('click', () => {
+  applySettings(DEFAULTS);
+  saveSettings();
+  toast('Настройки сброшены');
+});
+
+// ----- adding files -----
+const drop = $('#drop'), picker = $('#picker');
+drop.addEventListener('click', () => picker.click());
+drop.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); picker.click(); } });
+picker.addEventListener('change', () => { addFiles(picker.files); picker.value = ''; });
+['dragenter', 'dragover'].forEach((t) => document.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach((t) => document.addEventListener(t, (e) => {
+  e.preventDefault();
+  if (t === 'dragleave' && e.relatedTarget) return;
+  drop.classList.remove('over');
+}));
+document.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+
+function addFiles(list) {
+  const pdfs = [...list].filter((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  if (list.length && !pdfs.length) return toast('Это не PDF. Перетащите файлы с расширением .pdf');
+  for (const f of pdfs) {
+    const item = { id: nextId++, name: f.name, size: f.size, state: 'wait', codes: [] };
+    files.push(item);
+    queue = queue.then(() => decode(item, f));
+  }
+  render();
+}
+
+async function decode(item, file) {
+  if (!files.includes(item)) return;
+  item.state = 'busy'; render();
+  try {
+    const res = await fetch('/api/decode', { method: 'POST', body: file, headers: { 'Content-Type': 'application/pdf' } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(errorText(data.error));
+    Object.assign(item, data, { state: 'done' });
+  } catch (e) {
+    item.state = 'error';
+    item.error = e instanceof TypeError ? NO_CONNECTION : e.message;
+  }
+  render();
+}
+
+// ----- rendering -----
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const showCode = (c) => esc(c).replace(/\x1d/g, '<span class="gs" title="Разделитель GS">␝</span>');
+const plural = (n, one, few, many) => {
+  const a = n % 10, b = n % 100;
+  return n + ' ' + (a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many);
+};
+const codesWord = (n) => plural(n, 'код', 'кода', 'кодов');
+const openState = new Set();
+
+function fileHtml(f, seen, dedupe) {
+  let status, meta;
+  if (f.state === 'wait') { status = '<div class="spinner paused"></div>'; meta = 'В очереди'; }
+  else if (f.state === 'busy') { status = '<div class="spinner"></div>'; meta = 'Распознаю…'; }
+  else if (f.state === 'error') { status = '<div class="dot err"></div>'; meta = `<span class="err">${esc(f.error)}</span>`; }
+  else {
+    const found = f.codes.length ? `<b>${codesWord(f.codes.length)}</b>` : '<b>Коды не найдены</b>';
+    status = f.codes.length ? '<div class="dot"></div>' : '<div class="dot warn"></div>';
+    meta = `${found} · ${f.pages} стр. · ${(f.size / 1024).toFixed(0)} КБ`;
+  }
+  const rows = f.codes.map((c, i) => {
+    const dup = seen.has(c.code); seen.add(c.code);
+    return `<tr class="${dup && dedupe ? 'dup' : ''}" title="${dup ? 'Повтор: этот код уже встречался' : ''}"><td>${i + 1}</td><td>${showCode(c.code)}</td></tr>`;
+  }).join('');
+  return `<div class="file">
+    <div class="file-row">
+      <div class="status">${status}</div>
+      <div style="min-width:0"><div class="file-name" title="${esc(f.name)}">${esc(f.name)}</div><div class="file-meta"${f.state === 'error' ? ` title="${esc(f.error)}"` : ''}>${meta}</div></div>
+      <button class="icon-btn x" data-remove="${f.id}" title="Убрать файл" aria-label="Убрать ${esc(f.name)}">×</button>
+    </div>
+    ${f.codes.length ? `<details data-id="${f.id}" ${openState.has(f.id) ? 'open' : ''}><summary>Показать коды</summary><div class="codes"><table>${rows}</table></div></details>` : ''}
+  </div>`;
+}
+
+function render() {
+  const s = readSettings();
+  const seen = new Set();
+  const list = $('#list');
+  list.innerHTML = files.map((f) => fileHtml(f, seen, s.dedupe)).join('');
+  $('#files').hidden = !files.length;
+
+  const total = files.reduce((n, f) => n + f.codes.length, 0);
+  const unique = seen.size;
+  const count = s.dedupe ? unique : total;
+  const dups = total - unique;
+  const busy = files.some((f) => f.state === 'wait' || f.state === 'busy');
+  const withCodes = files.filter((f) => f.codes.length).length;
+
+  $('#reset').hidden = JSON.stringify(s) === JSON.stringify(DEFAULTS);
+  $('#total').textContent = count ? codesWord(count) + (dups ? `, повторов: ${dups}` : '') : 'Нет кодов';
+  $('#hint').textContent = !files.length ? 'добавьте PDF'
+    : busy ? 'распознаю…'
+    : !count ? 'в файлах нет кодов'
+    : s.mode === 'single' ? 'один CSV'
+    : s.mode === 'per-file' ? `${plural(withCodes, 'файл', 'файла', 'файлов')} CSV`
+    : `${plural(count, 'файл', 'файла', 'файлов')} CSV`;
+  const go = $('#go');
+  go.disabled = busy || !count;
+  go.textContent = s.mode === 'single' || (s.mode === 'per-file' && withCodes === 1) || count === 1 ? 'Скачать CSV' : 'Скачать ZIP';
+}
+
+$('#list').addEventListener('click', (e) => {
+  const id = Number(e.target.dataset.remove);
+  if (!id) return;
+  files.splice(files.findIndex((f) => f.id === id), 1);
+  openState.delete(id);
+  render();
+});
+$('#list').addEventListener('toggle', (e) => {
+  const id = Number(e.target.dataset.id);
+  e.target.open ? openState.add(id) : openState.delete(id);
+}, true);
+$('#clear').addEventListener('click', () => { files.length = 0; openState.clear(); render(); });
+
+// ----- export -----
+$('#go').addEventListener('click', async () => {
+  const s = readSettings();
+  const body = {
+    mode: s.mode,
+    options: s,
+    files: files.filter((f) => f.state === 'done' && f.codes.length).map((f) => ({ name: f.name, codes: f.codes })),
+  };
+  try {
+    const res = await fetch('/api/export', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(errorText((await res.json().catch(() => ({}))).error));
+    const name = decodeURIComponent(res.headers.get('X-Filename') || 'codes.csv');
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast(`Сохранено: ${name}`);
+  } catch (e) {
+    toast(e instanceof TypeError ? NO_CONNECTION : 'Не удалось сохранить: ' + e.message);
+  }
+});
+
+let toastTimer;
+function toast(text) {
+  const t = $('#toast');
+  t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (t.hidden = true), 3500);
+}
+
+// the ping keeps the server running while the page is open
+setInterval(() => fetch('/api/ping').catch(() => {}), 30000);
+render();
+</script>
+</body>
+</html>
